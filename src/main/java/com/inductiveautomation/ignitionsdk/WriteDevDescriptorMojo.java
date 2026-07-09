@@ -127,7 +127,7 @@ public class WriteDevDescriptorMojo extends AbstractMojo {
         if (hooks != null) {
             for (ModuleHook hook : hooks) {
                 if (hooksMap.containsKey(hook.getScope())){
-                    throw Exception(hook.getScope() + " has hookClass assigned already.")
+                    throw new MojoExecutionException(hook.getScope() + " has hookClass assigned already.");
                 }
                 hooksMap.put(hook.getScope(), hook.getHookClass());
             }
