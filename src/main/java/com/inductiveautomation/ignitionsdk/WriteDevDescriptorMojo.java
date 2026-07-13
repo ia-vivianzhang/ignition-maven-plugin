@@ -20,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -83,6 +84,12 @@ public class WriteDevDescriptorMojo extends AbstractMojo {
         // Collect scope data from sub-projects
         Map<String, ScopeData> scopeMap = new LinkedHashMap<>();
 
+        // Reactor modules (by groupId:artifactId) — their jars are excluded; we use class dirs instead.
+        Set<String> reactorModuleIds = new HashSet<>();
+        for (MavenProject mp : parent.getCollectedProjects()) {
+            reactorModuleIds.add(mp.getGroupId() + ":" + mp.getArtifactId());
+        }
+
         for (MavenProject p : parent.getCollectedProjects()) {
             String scope = ignitionScopes.get(p.getName());
             if (scope == null) {
@@ -103,14 +110,20 @@ public class WriteDevDescriptorMojo extends AbstractMojo {
                 data.classDirs.add(targetClasses.getAbsolutePath());
             }
 
-            // Resolved dependency JARs (compile scope, external only)
+            // Resolved dependency JARs — mirror the set that ignition:modl bundles into the .modl:
+            // only compile-scoped third-party artifacts. The artifact filter must be set for a
+            // collected (sibling) project's getArtifacts() to return anything (same as IgnitionModlMojo).
             p.setArtifactFilter(new ScopeArtifactFilter("compile"));
             for (Artifact artifact : p.getArtifacts()) {
+                if (!"compile".equals(artifact.getScope())) {
+                    continue;
+                }
+                // Exclude reactor project artifacts (other sub-modules) — we use class dirs for those.
+                if (reactorModuleIds.contains(artifact.getGroupId() + ":" + artifact.getArtifactId())) {
+                    continue;
+                }
                 if (artifact.getFile() != null && artifact.getFile().getName().endsWith(".jar")) {
-                    // Exclude project artifacts (other sub-modules) — we use class dirs for those
-                    if (artifact.getScope() != null) {
-                        data.jars.add(artifact.getFile().getAbsolutePath());
-                    }
+                    data.jars.add(artifact.getFile().getAbsolutePath());
                 }
             }
         }
