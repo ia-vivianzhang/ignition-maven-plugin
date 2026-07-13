@@ -63,8 +63,8 @@ public class WriteDevDescriptorMojo extends AbstractMojo {
     @Parameter(defaultValue = "${project.version}", required = true)
     private String moduleVersion;
 
-    @Parameter(required = false, defaultValue = "false")
-    private String freeModule;
+    @Parameter(defaultValue = "false")
+    private boolean freeModule;
 
     @Parameter(required = true)
     private String requiredIgnitionVersion;
@@ -132,7 +132,7 @@ public class WriteDevDescriptorMojo extends AbstractMojo {
         descriptor.put("id", moduleId);
         descriptor.put("name", moduleName);
         descriptor.put("version", moduleVersion);
-        descriptor.put("freeModule", Boolean.parseBoolean(freeModule));
+        descriptor.put("freeModule", freeModule);
 
         // Hooks: scope -> className
         Map<String, String> hooksMap = new LinkedHashMap<>();

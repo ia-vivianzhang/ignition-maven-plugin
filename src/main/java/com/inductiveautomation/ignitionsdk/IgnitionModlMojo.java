@@ -115,8 +115,8 @@ public class IgnitionModlMojo extends AbstractMojo {
      * Specify if the module is a free module.  Defaults to false if not supplied.
      */
     @Deprecated
-    @Parameter(required = false, defaultValue = "false")
-    private String freeModule;
+    @Parameter(defaultValue = "false")
+    private boolean freeModule;
 
     /**
      * The name of the documentation index file.
