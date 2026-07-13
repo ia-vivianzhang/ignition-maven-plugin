@@ -102,16 +102,11 @@ public class WriteDevDescriptorMojo extends AbstractMojo {
 
             ScopeData data = scopeMap.computeIfAbsent(scope, k -> new ScopeData());
 
-            // Class output directory (Maven convention: target/classes)
-            String outputDir = p.getBuild().getOutputDirectory();
-            if (outputDir != null && new File(outputDir).isDirectory()) {
-                data.classDirs.add(outputDir);
-            }
-
-            // Resources output (same dir in Maven, but check for target/classes explicitly)
-            File targetClasses = new File(p.getBasedir(), "target/classes");
-            if (targetClasses.isDirectory()) {
-                data.classDirs.add(targetClasses.getAbsolutePath());
+            // Class output directory (Maven convention: target/classes).
+            // Maven's resource plugin copies resources into this same dir, so it covers both.
+            File outDir = new File(p.getBuild().getOutputDirectory());
+            if (outDir.isDirectory()) {
+                data.classDirs.add(outDir.getAbsolutePath());
             }
 
             // Resolved dependency JARs — mirror the set that ignition:modl bundles into the .modl:
