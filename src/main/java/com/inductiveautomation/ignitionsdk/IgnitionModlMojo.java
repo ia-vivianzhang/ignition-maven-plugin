@@ -359,7 +359,11 @@ public class IgnitionModlMojo extends AbstractMojo {
                 }
             }
 
+            Set<String> hookScopes = new HashSet<>();
             for (ModuleHook h : hooks) {
+                if (!hookScopes.add(h.getScope())) {
+                    throw new MojoExecutionException(h.getScope() + " has hookClass assigned already.");
+                }
                 writer.writeStartElement("hook");
                 writer.writeAttribute("scope", h.getScope());
                 writer.writeCharacters(h.getHookClass());
