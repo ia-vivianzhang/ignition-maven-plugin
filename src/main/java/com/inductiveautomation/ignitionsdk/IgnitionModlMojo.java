@@ -322,9 +322,14 @@ public class IgnitionModlMojo extends AbstractMojo {
             }
 
             if (depends != null) {
+                // The 'required' attribute is only understood by Ignition 8.3+; emit it only then.
+                boolean writeRequired = IgnitionVersions.supportsRequiredDependencyFlag(requiredIgnitionVersion);
                 for (ModuleDepends d : depends) {
                     writer.writeStartElement("depends");
                     writer.writeAttribute("scope", d.getScope());
+                    if (writeRequired) {
+                        writer.writeAttribute("required", String.valueOf(d.isRequired()));
+                    }
                     writer.writeCharacters(d.getModuleId());
                     writer.writeEndElement();
                 }

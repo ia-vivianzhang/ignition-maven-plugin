@@ -34,6 +34,10 @@ import java.util.Set;
  * per-scope class output directories and resolved dependency JAR paths. This enables a dev Ignition
  * gateway to load the module directly from Maven build outputs instead of requiring a full .modl build.
  * <p>
+ * The descriptor references each subproject's {@code target/classes}, so the module must be compiled
+ * first. Run it after compilation — e.g. {@code mvn compile ignition:write-dev-descriptor}, or bind it
+ * to a post-compile phase — otherwise the class directories are omitted from the descriptor.
+ * <p>
  * Usage: {@code mvn ignition:write-dev-descriptor}
  */
 @Mojo(name = "write-dev-descriptor",
@@ -46,9 +50,6 @@ public class WriteDevDescriptorMojo extends AbstractMojo {
 
     @Parameter(defaultValue = "${project}", readonly = true)
     private MavenProject project;
-
-    @Parameter(defaultValue = "${project.collectedProjects}", readonly = true)
-    private List<MavenProject> projects;
 
     @Parameter(required = true)
     private ProjectScope[] projectScopes;
@@ -64,6 +65,9 @@ public class WriteDevDescriptorMojo extends AbstractMojo {
 
     @Parameter(required = false, defaultValue = "false")
     private String freeModule;
+
+    @Parameter(required = true)
+    private String requiredIgnitionVersion;
 
     @Parameter
     private ModuleDepends[] depends;
@@ -147,14 +151,18 @@ public class WriteDevDescriptorMojo extends AbstractMojo {
         }
         descriptor.put("hooks", hooksMap);
 
-        // Module dependencies
+        // Module dependencies. The 'required' flag is only understood by Ignition 8.3+, so gate it
+        // on requiredIgnitionVersion — same rule as the module.xml written by ignition:modl.
+        boolean writeRequired = IgnitionVersions.supportsRequiredDependencyFlag(requiredIgnitionVersion);
         List<Map<String, Object>> depsList = new ArrayList<>();
         if (depends != null) {
             for (ModuleDepends dep : depends) {
                 Map<String, Object> depMap = new LinkedHashMap<>();
                 depMap.put("id", dep.getModuleId());
                 depMap.put("scope", dep.getScope());
-                depMap.put("required", true);
+                if (writeRequired) {
+                    depMap.put("required", dep.isRequired());
+                }
                 depsList.add(depMap);
             }
         }
@@ -170,6 +178,8 @@ public class WriteDevDescriptorMojo extends AbstractMojo {
         }
         descriptor.put("scopes", scopesJson);
 
+        // TODO: exports are not yet collected; emitted as an empty object to match the descriptor
+        // schema (and the Gradle plugin's counterpart) until per-scope exports are wired up.
         descriptor.put("exports", new LinkedHashMap<>());
 
         // Write to build/dev/{moduleId}.json
