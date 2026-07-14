@@ -30,11 +30,23 @@ The descriptor enables a dev Ignition gateway to load your module directly from 
 
 ### Usage
 
-```bash
-mvn ignition:write-dev-descriptor
+Bind the goal in your module's build POM (alongside `ignition:modl`) so it runs as part of the normal build:
+
+```xml
+<execution>
+    <phase>package</phase>
+    <goals>
+        <goal>modl</goal>
+        <goal>write-dev-descriptor</goal>
+    </goals>
+</execution>
 ```
 
-This produces `target/dev/{moduleId}.json`. Copy it to your gateway's `user-lib/modules/dev/` directory:
+Then `mvn package` produces `target/dev/{moduleId}.json`.
+
+> **Run it through the phase binding (`mvn package`), not as a direct `mvn ignition:write-dev-descriptor` invocation.** A directly-invoked goal executes against every module in the reactor: at an aggregator root it hits the parent POM, which lacks the required `<configuration>` and fails with "parameters … are missing or invalid"; restricting with `-pl <build-module>` instead drops the sibling gateway module from the reactor, so its inter-module `SNAPSHOT` dependency can't be resolved and the build fails there. The phase binding above avoids both problems by running the goal on the correct module as part of the normal reactor build.
+
+Copy the descriptor to your gateway's `user-lib/modules/dev/` directory:
 
 ```bash
 mkdir -p /path/to/ignition/user-lib/modules/dev
@@ -60,7 +72,7 @@ Your dev gateway needs these JVM flags in `ignition.conf` (or wrapper config):
 
 ### Development Workflow
 
-1. `mvn compile` then `mvn ignition:write-dev-descriptor` — generate and copy descriptor (first time, or after dependency changes)
+1. `mvn package` — build the module and generate the descriptor, then copy it (first time, or after dependency changes)
 2. Start/restart the gateway
 3. In IntelliJ: **Run → Attach to Process** (or create a **Remote JVM Debug** config on port 5005)
 4. Make code changes
