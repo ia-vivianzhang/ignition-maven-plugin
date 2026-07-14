@@ -26,6 +26,8 @@ The descriptor enables a dev Ignition gateway to load your module directly from 
 - **HotSwap support** for method-body changes via JDWP
 - **No .modl build required** — no compile+zip+sign cycle for code changes
 
+> For Gradle-based modules, the [`ignition-module-tools`](https://github.com/inductiveautomation/ignition-module-tools) Gradle plugin provides the equivalent `writeDevModuleDescriptor` task, which emits the same descriptor format.
+
 ### Usage
 
 ```bash
@@ -72,5 +74,24 @@ Repeat steps 4-6 without restarting. Only restart the gateway when:
 
 ### Configuration
 
-The goal reads the same `<configuration>` block as `ignition:modl` — no additional configuration is needed. It uses `moduleId`, `moduleName`, `moduleVersion`, `projectScopes`, `hooks`, and `depends` to build the descriptor, and resolves compile-scope dependencies from each sub-project.
+The goal reads the same `<configuration>` block as [`ignition:modl`](#ignitionmodl) — no additional configuration is needed. It uses `moduleId`, `moduleName`, `moduleVersion`, `requiredIgnitionVersion`, `projectScopes`, `hooks`, and `depends` to build the descriptor, and resolves compile-scope dependencies from each sub-project.
+
+`<projectScopes>` maps each sub-project to the Ignition scope(s) it targets. The `<name>` is matched against the `<name>` element of the child module's POM (not its `<artifactId>`), and `<scope>` is one or more Ignition scope letters — `G` (gateway), `C` (client/vision), `D` (designer):
+
+```xml
+<projectScopes>
+    <projectScope>
+        <name>my-module-gateway</name>   <!-- matches <name> in the child pom -->
+        <scope>G</scope>
+    </projectScope>
+    <projectScope>
+        <name>my-module-designer</name>
+        <scope>CD</scope>                <!-- may combine scopes -->
+    </projectScope>
+</projectScopes>
+```
+
+The `required` flag on a `<depend>` is only written to the descriptor (and to `module.xml`) when `requiredIgnitionVersion` is 8.3 or newer, since earlier gateways don't understand it. It defaults to `false`.
+
+> **Portability:** the descriptor bakes in absolute filesystem paths (class directories and dependency JARs) specific to the machine that generated it. Regenerate it on each dev machine — **do not check it into source control.**
 
